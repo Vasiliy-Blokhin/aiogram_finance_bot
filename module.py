@@ -27,13 +27,8 @@ class JSONSaveAndRead():
     @classmethod
     def get_api_response(self):
         result = []
-        resp = list(requests.get(self.url).json())
-        #Структура ответа.
-        # logger.info(f'resp -> {type(resp)}') # list
-        # logger.info(f'resp[1] -> {type(resp[1])} - {resp[1].keys()}') # dict
-        # logger.info(f'resp[1]["securities"] -> {type(resp[1]["securities"])}') # list
-        # logger.info(f'resp[1]["securities"][0] -> {type(resp[1]["securities"][0])}') # dict
-        for element in resp[1]["securities"]:
+        resp = self.test_indata(requests.get(self.url).json())
+        for element in resp[1]['securities']:
             new_dict = {}
             for key, value in element.items():
                 if key in NEEDFUL:
@@ -41,7 +36,23 @@ class JSONSaveAndRead():
             result.append(new_dict)
         return result
 
-
+    def test_indata(indata):
+        try:
+            if not isinstance(indata, list):
+                raise TypeError('indata - not list.')
+            if not isinstance(indata[1], dict):
+                raise TypeError('indata[1] - not dict.')
+            if 'securities' not in indata[1].keys():
+                logger.info(f'---> {indata[1].keys()}')
+                raise ValueError('indata[1] - "securities" not in indata[1]')
+            if not isinstance(indata[1]['securities'], list):
+                raise TypeError('indata[1]["securities"] - not list.')
+            if not isinstance(indata[1]['securities'][0], dict):
+                raise TypeError('indata[1]["securities"][0] - not dict.')
+            return indata
+        except Exception as error:
+            logger.error(f'Error ---> {error}')
+            return False
 
     @classmethod
     def save_api_request(self):
