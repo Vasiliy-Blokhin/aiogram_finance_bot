@@ -1,3 +1,17 @@
+from os import getenv
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+TOKEN = getenv("BOT_TOKEN")
+
+# IMOEX данные
+IMOEX_URL = 'http://iss.moex.com/iss/engines/stock/markets/shares/securities.json?iss.json=extended&iss.meta=off'
+
+NEEDFUL = ['SECID', 'SHORTNAME']
+
+
 def start_message(name):
     hello_message = (
         f'Приветсвую, {name}!\n\n Если тебе понравился бот и ты хочешь, чтобы '
