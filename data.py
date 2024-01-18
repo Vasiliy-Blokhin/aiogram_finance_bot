@@ -14,19 +14,24 @@ handler.setFormatter(formater)
 load_dotenv()
 
 TOKEN = getenv('BOT_TOKEN')
-STACK_MARKET_TOKEN = getenv('STACK_MARKET_TOKEN')
+
 # IMOEX данные
 IMOEX_URL = (
     'http://iss.moex.com/iss/engines/stock/markets/shares/'
     'securities.json?iss.json=extended&iss.meta=off'
     )
 
-# Stack market данные.
-SM_URL = (
-    f'http://api.marketstack.com/v1/eod?access_key = {STACK_MARKET_TOKEN}'
-)
+
+# Stack market данные. (Нет индекса Мосбиржи)
+# STACK_MARKET_TOKEN = getenv('STACK_MARKET_TOKEN')
+# SM_URL = (
+#    f'http://api.marketstack.com/v1/eod?access_key = {STACK_MARKET_TOKEN}'
+# )
+
+
 NEEDFUL = [
-    'SECID', 'SHORTNAME', 'PREVPRICE', 'PREVWAPRICE', 'PREVDATE', 'SETTLEDATE'
+    'SECID', 'SHORTNAME', 'PREVPRICE', 'PREVWAPRICE', 'PREVDATE', 'SETTLEDATE',
+    'STATUS', 'WAPTOPREVWAPRICE', 'UPDATETIME', 'LCURRENTPRICE'
 ]
 
 FILE_MAIN = 'data_json/api_data.json'
