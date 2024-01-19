@@ -7,9 +7,12 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from data import start_message, TOKEN
+from data import start_message, TOKEN, handler
 
 
+logger = logging.getLogger(name=__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
 
 dp = Dispatcher()
 
@@ -19,7 +22,7 @@ async def command_start_handler(message: Message) -> None:
     """
     This handler receives messages with `/start` command
     """
-    await message.answer(start_message(message.from_user.full_name))
+    await message.answer(start_message(message.from_user.first_name))
 
 
 

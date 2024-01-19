@@ -12,8 +12,8 @@ logger.addHandler(handler)
 class JSONSaveAndRead():
     """ Запись  и чтение полученного json файла."""
     def __init__(self, url, file) -> None:
-        self.url = url
-        self.file = file
+        self.url: str = url
+        self.file: str = file
 
     @classmethod
     def get_api_response(self):
@@ -34,7 +34,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
     """ Запись  и чтение полученного json файла."""
     def __init__(self, url, file, type_data) -> None:
         super().__init__(url, file)
-        self.type_data = type_data
+        self.type_data: str = type_data
 
     @classmethod
     def api_response_filter(self):
@@ -53,6 +53,8 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
 
     def test_indata(indata, type_data):
         try:  # Структура входных данных.
+            if indata is None:
+                raise ValueError('indata - empty.')
             if not isinstance(indata, list):
                 raise TypeError('indata - not list')
             if not isinstance(indata[1], dict):
@@ -72,6 +74,8 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
 
     def test_outdata(outdata):
         try:  # Структура выходных данных.
+            if outdata is None:
+                raise ValueError('outdata - empty.')
             if not isinstance(outdata, list):
                 raise TypeError('outdata - not list')
             for element in outdata:
@@ -83,3 +87,13 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
         except Exception as error:
             logger.error(f'Error ---> {error}')
             return False
+
+    @classmethod
+    def union_api_response(self, data_sec, data_md):
+        result = []
+        for item_1 in data_sec:
+            for item_2 in data_md:
+                if item_1['SECID'] == item_2['SECID']:
+                    item_1.update(item_2)
+            result.append(item_1)
+        return self.test_outdata(result)

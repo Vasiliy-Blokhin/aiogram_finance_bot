@@ -28,7 +28,7 @@ IMOEX_URL = (
 #    f'http://api.marketstack.com/v1/eod?access_key = {STACK_MARKET_TOKEN}'
 # )
 
-
+TYPE_DATA_IMOEX = ['securities', 'marketdata']
 NEEDFUL = [
     'SECID', 'SHORTNAME', 'PREVPRICE', 'PREVWAPRICE', 'PREVDATE', 'SETTLEDATE',
     'STATUS', 'WAPTOPREVWAPRICE', 'UPDATETIME', 'LCURRENTPRICE'
