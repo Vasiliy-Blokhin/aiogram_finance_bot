@@ -51,6 +51,16 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
             result.append(new_dict)
         return self.test_outdata(result)
 
+    @classmethod
+    def union_api_response(self, data_sec, data_md):
+        result = []
+        for item_1 in data_sec:
+            for item_2 in data_md:
+                if item_1['SECID'] == item_2['SECID']:
+                    item_1.update(item_2)
+            result.append(item_1)
+        return self.test_outdata(result)
+
     def test_indata(indata, type_data):
         try:  # Структура входных данных.
             if indata is None:
@@ -88,12 +98,39 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
             logger.error(f'Error ---> {error}')
             return False
 
+
+class JSONUpData(JSONSaveAndReadISS):
+
     @classmethod
-    def union_api_response(self, data_sec, data_md):
+    def data_filter_last(self, data):
         result = []
-        for item_1 in data_sec:
-            for item_2 in data_md:
-                if item_1['SECID'] == item_2['SECID']:
-                    item_1.update(item_2)
-            result.append(item_1)
-        return self.test_outdata(result)
+        for el in data:
+            if el['STATUS'] != 'A':
+                continue
+            if el['PREVPRICE'] is None or el['PREVWAPRICE'] is None:
+                continue
+            if el['PREVPRICE'] < el['PREVWAPRICE']:
+                continue
+            result.append(el)
+        return result
+
+    def data_up_price_daily():
+        pass
+
+
+class JSONDownData(JSONSaveAndReadISS):
+
+    def data_filter_last(data):
+        result = []
+        for el in data:
+            if el['STATUS'] != 'A':
+                continue
+            if el['PREVPRICE'] is None or el['PREVWAPRICE'] is None:
+                continue
+            if el['PREVPRICE'] > el['PREVWAPRICE']:
+                continue
+            result.append(el)
+        return result
+
+    def data_down_price_daily():
+        pass
