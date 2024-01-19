@@ -4,6 +4,7 @@ import sys
 from dotenv import load_dotenv
 import logging
 
+from json_worker import JSONSaveAndRead
 
 handler = logging.StreamHandler(sys.stdout)
 formater = logging.Formatter(
@@ -32,7 +33,7 @@ TYPE_DATA_IMOEX = ['securities', 'marketdata']
 NEEDFUL = [
     'SECID', 'SHORTNAME', 'PREVPRICE', 'PREVWAPRICE', 'PREVDATE',
     'STATUS', 'WAPTOPREVWAPRICE', 'UPDATETIME', 'LCURRENTPRICE', 'LAST',
-    'PRICEMINUSPREVWAPRICE'
+    'PRICEMINUSPREVWAPRICE', 'TIME'
 ]
 
 FILE_MAIN = 'data_json/api_data.json'
@@ -42,16 +43,16 @@ FILE_DOWN_PRICE = 'data_json/down_in_price.json'
 
 def start_message(name):
     hello_message = (
-        f'Приветсвую, {name}!\n\n Если тебе понравился бот и ты хочешь, чтобы '
-        'я улучшал его, то дай обратную связь: \n ---> @Vasilianin.\n\n'
+        f'Приветсвую, {name}!\n\n '
     )
     disclaimer_message = (
-        'Дисклеймер:\n Результат, который выдает бот может '
-        'быть ошибочным, так как данные берутся со сторонних сервисов '
-        '(Мосбиржа).\n Акции'
-        ' подбираются согласно расчетов различных методик, взятых из интернета и на'
-        ' основе их выдаются рекомендации.\n Дальнейшие действия на ваш риск. '
-        '\n\nНа данный момент бот находится в разработке, так что возможны '
-        'отключения, сбои, неверная информация.'
+        'Перед началом обязательно прочитай "/info"'
+        'Если тебе понравился бот и ты хочешь, чтобы '
+        'я улучшал его, то дай обратную связь: \n ---> @Vasilianin.\n\n'
     )
     return hello_message + disclaimer_message
+
+
+def info_message():
+    message = ''
+    return message

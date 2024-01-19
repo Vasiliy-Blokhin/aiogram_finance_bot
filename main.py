@@ -25,8 +25,6 @@ async def command_start_handler(message: Message) -> None:
     await message.answer(start_message(message.from_user.first_name))
 
 
-
-
 async def main() -> None:
     bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
     await dp.start_polling(bot)

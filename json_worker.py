@@ -101,8 +101,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
 
 class JSONUpData(JSONSaveAndReadISS):
 
-    @classmethod
-    def data_filter_last(self, data):
+    def data_filter_last(data):
         result = []
         for el in data:
             if el['STATUS'] != 'A':
@@ -114,8 +113,32 @@ class JSONUpData(JSONSaveAndReadISS):
             result.append(el)
         return result
 
-    def data_up_price_daily():
-        pass
+    @classmethod
+    def data_filter_daily(self, data):
+        result = []
+        params = [
+            'WAPTOPREVWAPRICE', 'PRICEMINUSPREVWAPRICE', 'LCURRENTPRICE',
+            'PREVWAPRICE', 'LAST'
+        ]
+        for el in self.data_filter_last(data):
+            param_log = True
+            for param in params:
+                if el[param] is None:
+                    param_log = False
+            if not param_log:
+                continue
+            if el['WAPTOPREVWAPRICE'] < 0:
+                continue
+            if el['PRICEMINUSPREVWAPRICE'] < 0:
+                continue
+            if el['LCURRENTPRICE'] < el['PREVWAPRICE']:
+                continue
+            if el['LCURRENTPRICE'] < el['LAST']:
+                continue
+            if el['LAST'] < el['PREVWAPRICE']:
+                continue
+            result.append(el)
+        return result
 
 
 class JSONDownData(JSONSaveAndReadISS):
@@ -132,5 +155,29 @@ class JSONDownData(JSONSaveAndReadISS):
             result.append(el)
         return result
 
-    def data_down_price_daily():
-        pass
+    @classmethod
+    def data_filter_daily(self, data):
+        result = []
+        params = [
+            'WAPTOPREVWAPRICE', 'PRICEMINUSPREVWAPRICE', 'LCURRENTPRICE',
+            'PREVWAPRICE', 'LAST'
+        ]
+        for el in self.data_filter_last(data):
+            param_log = True
+            for param in params:
+                if el[param] is None:
+                    param_log = False
+            if not param_log:
+                continue
+            if el['WAPTOPREVWAPRICE'] > 0:
+                continue
+            if el['PRICEMINUSPREVWAPRICE'] > 0:
+                continue
+            if el['LCURRENTPRICE'] > el['PREVWAPRICE']:
+                continue
+            if el['LCURRENTPRICE'] > el['LAST']:
+                continue
+            if el['LAST'] > el['PREVWAPRICE']:
+                continue
+            result.append(el)
+        return result

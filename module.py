@@ -1,7 +1,10 @@
 import logging
 from time import sleep
 
-from data import IMOEX_URL, FILE_MAIN, handler, TYPE_DATA_IMOEX, FILE_UP_PRICE, FILE_DOWN_PRICE
+from data import (
+    IMOEX_URL, FILE_MAIN, handler, TYPE_DATA_IMOEX,
+    FILE_UP_PRICE, FILE_DOWN_PRICE
+)
 from json_worker import JSONSaveAndReadISS, JSONDownData, JSONUpData
 
 
@@ -22,18 +25,21 @@ def get_data(api_json_class):
 def filter_data(jcs, data):
     for jc in jcs:
         jc.save_api_request(
-            jc.data_filter_last(data=data)
+            jc.data_filter_daily(data=data)
         )
 
 
 if __name__ == '__main__':
-    # Работа мосбиржы.
+    # Работа мосбиржи.
     while True:
         try:
             api_json_class = JSONSaveAndReadISS
             api_json_class.url = IMOEX_URL
             api_json_class.file = FILE_MAIN
             api_json_class.save_api_request(get_data(api_json_class))
+
+            if api_json_class.read_api_request()[0]['LAST'] is None:
+                continue
 
             up_json_class = JSONUpData
             up_json_class.file = FILE_UP_PRICE
