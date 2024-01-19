@@ -50,6 +50,6 @@ if __name__ == '__main__':
                 api_json_class.read_api_request()
             )
         except Exception as error:
-            logger.error(f'Error ---> {error}')
+            logger.error(f'Module error ---> {error}')
         finally:
             sleep(600)

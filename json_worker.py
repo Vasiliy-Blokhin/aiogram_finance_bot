@@ -39,11 +39,15 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
     @classmethod
     def api_response_filter(self):
         result = []
+        logger.debug('response filter start')
         resp = self.test_indata(
             indata=self.get_api_response(),
             type_data=self.type_data
         )
         for element in resp[1][self.type_data]:
+            if (self.type_data == 'securities'
+                and element.get('INSTRID') != 'EQIN'):
+                continue
             new_dict = {}
             for key, value in element.items():
                 if key in NEEDFUL:
@@ -79,7 +83,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
                 raise TypeError(f'indata[1]["{type_data}"][0] - not dict')
             return indata
         except Exception as error:
-            logger.error(f'Error ---> {error}')
+            logger.error(f'Indata error ---> {error}')
             return False
 
     def test_outdata(outdata):
@@ -95,7 +99,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
                     raise ValueError('outdata[element] - not in needful')
             return outdata
         except Exception as error:
-            logger.error(f'Error ---> {error}')
+            logger.error(f'Outdata error ---> {error}')
             return False
 
 
