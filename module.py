@@ -40,7 +40,7 @@ def filter_data(jcs, data):
         )
 
 
-if __name__ == '__main__':
+def main():
     # Работа мосбиржи.
     while True:
         try:
@@ -54,3 +54,7 @@ if __name__ == '__main__':
             logger.error(f'Module error ---> {error}')
         finally:
             sleep(600)
+
+
+if __name__ == '__main__':
+    main()
