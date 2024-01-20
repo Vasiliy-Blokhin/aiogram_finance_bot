@@ -3,7 +3,7 @@ import sys
 
 from dotenv import load_dotenv
 import logging
-
+import datetime
 
 handler = logging.StreamHandler(sys.stdout)
 formater = logging.Formatter(
@@ -31,7 +31,8 @@ TYPE_DATA_IMOEX = ['securities', 'marketdata']
 NEEDFUL = [
     'SECID', 'SHORTNAME', 'PREVPRICE', 'PREVWAPRICE', 'PREVDATE',
     'STATUS', 'WAPTOPREVWAPRICE', 'UPDATETIME', 'LCURRENTPRICE', 'LAST',
-    'PRICEMINUSPREVWAPRICE',
+    'PRICEMINUSPREVWAPRICE', 'DATAUPDATE', 'CURRENCYID', 'TRADINGSESSION',
+    'STATUS_FILTER'
 ]
 
 FILE_MAIN = 'data_json/api_data.json'
@@ -39,6 +40,15 @@ FILE_UP_PRICE = 'data_json/up_in_price.json'
 FILE_DOWN_PRICE = 'data_json/down_in_price.json'
 
 PARAMS_ALL = {
-    'SECID': 'Код ',
-    'SHORTNAME': 'Название '
+    'SECID': 'Код',
+    'SHORTNAME': 'Название',
+    'UPDATETIME': 'Время последнего обновления',
+    'LAST': 'Последняя цена (за акцию)',
+    'DATAUPDATE': 'Время последнего обновления базы данных',
+    'CURRENCYID': 'Валюта',
+    'TRADINGSESSION': 'Текущая сессия',
+    'STATUS_FILTER': 'Статус фильтрации'
 }
+
+format = '%H:%M:%S'
+CURRENT_TIME = (datetime.datetime.now() - datetime.timedelta(hours=7)).strftime(format)

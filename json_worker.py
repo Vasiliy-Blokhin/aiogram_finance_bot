@@ -2,7 +2,7 @@ import requests
 import json
 import logging
 
-from data import NEEDFUL, handler
+from data import NEEDFUL, handler, CURRENT_TIME
 
 logger = logging.getLogger(name=__name__)
 logger.setLevel(logging.DEBUG)
@@ -62,6 +62,11 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
             for item_2 in data_md:
                 if item_1['SECID'] == item_2['SECID']:
                     item_1.update(item_2)
+                    item_1['DATAUPDATE'] = CURRENT_TIME
+                    if item_1['TRADINGSESSION'] is None:
+                        item_1['TRADINGSESSION'] = 'торги приостановлены'
+                    if item_1['CURRENCYID'] == 'SUR':
+                        item_1['CURRENCYID'] = 'рубль'
             result.append(item_1)
         return self.test_outdata(result)
 
@@ -108,6 +113,7 @@ class JSONUpData(JSONSaveAndReadISS):
     def data_filter_last(data):
         result = []
         for el in data:
+            el['STATUS_FILTER'] = 'вероятность роста'
             if el['STATUS'] != 'A':
                 continue
             if el['PREVPRICE'] is None or el['PREVWAPRICE'] is None:
@@ -150,6 +156,7 @@ class JSONDownData(JSONSaveAndReadISS):
     def data_filter_last(data):
         result = []
         for el in data:
+            el['STATUS_FILTER'] = 'вероятность падения'
             if el['STATUS'] != 'A':
                 continue
             if el['PREVPRICE'] is None or el['PREVWAPRICE'] is None:
