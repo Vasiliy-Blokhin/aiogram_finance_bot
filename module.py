@@ -13,6 +13,17 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 
+ALL_JC = JSONSaveAndReadISS
+ALL_JC.url = IMOEX_URL
+ALL_JC.file = FILE_MAIN
+
+UP_JC = JSONUpData
+UP_JC.file = FILE_UP_PRICE
+
+DOWN_JC = JSONDownData
+DOWN_JC.file = FILE_DOWN_PRICE
+
+
 def get_data(api_json_class):
     data_list = []
     for type_data in TYPE_DATA_IMOEX:
@@ -33,21 +44,11 @@ if __name__ == '__main__':
     # Работа мосбиржи.
     while True:
         try:
-            api_json_class = JSONSaveAndReadISS
-            api_json_class.url = IMOEX_URL
-            api_json_class.file = FILE_MAIN
-            api_json_class.save_api_request(get_data(api_json_class))
+            ALL_JC.save_api_request(get_data(ALL_JC))
 
-            if api_json_class.read_api_request()[0]['LAST'] is None:
-                continue
-
-            up_json_class = JSONUpData
-            up_json_class.file = FILE_UP_PRICE
-            down_json_class = JSONDownData
-            down_json_class.file = FILE_DOWN_PRICE
             filter_data(
-                [up_json_class, down_json_class],
-                api_json_class.read_api_request()
+                [UP_JC, DOWN_JC],
+                ALL_JC.read_api_request()
             )
         except Exception as error:
             logger.error(f'Module error ---> {error}')
