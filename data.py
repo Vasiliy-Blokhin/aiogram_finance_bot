@@ -37,3 +37,8 @@ NEEDFUL = [
 FILE_MAIN = 'data_json/api_data.json'
 FILE_UP_PRICE = 'data_json/up_in_price.json'
 FILE_DOWN_PRICE = 'data_json/down_in_price.json'
+
+PARAMS_ALL = {
+    'SECID': 'Код ',
+    'SHORTNAME': 'Название '
+}

@@ -1,5 +1,13 @@
-# in module
-# to main
+from module import ALL_JC, UP_JC
+from data import PARAMS_ALL
+
+import logging
+from data import handler
+logger = logging.getLogger(name=__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+
+
 def start_message(name):
     hello_message = (
         f'👋Приветсвую, {name}!\n\n '
@@ -46,29 +54,18 @@ def work_message():
     return message
 
 
-def all_shares():
-    message = (
-        ''
-    )
+def shares_mess(key, value, message):
+    message += f"{PARAMS_ALL[key]} -> {value}\n"
     return message
 
 
-def up_shares():
+def certain_shares(code):
+    all_data = ALL_JC.read_api_request()
+    for data in all_data:
+        if data['SECID'] == code:
+            share = data
+            break
     message = (
-        ''
-    )
-    return message
-
-
-def down_shares():
-    message = (
-        ''
-    )
-    return message
-
-
-def certain_shares():
-    message = (
-        ''
+        f"code -> {share['SECID']}\nname -> {share['SHORTNAME']}"
     )
     return message
