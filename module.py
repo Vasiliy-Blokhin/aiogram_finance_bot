@@ -78,12 +78,15 @@ def main():
     """ Общая логика работы."""
     while True:
         try:
+            logger.info('Старт обновления БД')
             get_and_save_data(ALL_JC)
+            logger.info('Ответ получен и сохранен')
             filter_data(
                 [UP_JC, DOWN_JC],
                 ALL_JC.read_api_request()
             )
             add_more_information()
+            logger.info('БД отфильтрована и готова')
         except Exception as error:
             logger.error(f'Module error ---> {error}')
         finally:
