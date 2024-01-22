@@ -1,77 +1,102 @@
+""" Описание класса, для работы с БД."""
 import requests
 import json
 import logging
+from datetime import datetime
+from pytz import timezone
 
-from data import NEEDFUL, handler, CURRENT_TIME
+from data import NEEDFUL, handler
 
+# Запуск логгера.
 logger = logging.getLogger(name=__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 
 class JSONSaveAndRead():
-    """ Запись  и чтение полученного json файла."""
+    """ Родительский класс для базовых действий."""
     def __init__(self, url, file) -> None:
         self.url: str = url
         self.file: str = file
 
     @classmethod
     def get_api_response(self):
+        """ Получение информации с запроса на сервер."""
         return requests.get(self.url).json()
 
     @classmethod
     def save_api_request(self, data):
+        """ Сохранение информации в файле."""
         with open(self.file, 'w') as outfile:
             json.dump(data, outfile)
 
     @classmethod
     def read_api_request(self):
+        """ Чтение информации с файла."""
         with open(self.file) as json_file:
             return json.load(json_file)
 
 
 class JSONSaveAndReadISS(JSONSaveAndRead):
-    """ Запись  и чтение полученного json файла."""
+    """ Класс для работы с API imoex (iss)."""
     def __init__(self, url, file, type_data) -> None:
         super().__init__(url, file)
         self.type_data: str = type_data
 
     @classmethod
     def api_response_filter(self):
+        """ Фильтрация данных, полученных с запроса."""
         result = []
-        logger.debug('response filter start')
-        resp = self.test_indata(
+        # Получение и проверка данных.
+        resp = self.validate_indata(
             indata=self.get_api_response(),
             type_data=self.type_data
         )
+        # Фильтрация полученных данных (из разных "графов").
         for element in resp[1][self.type_data]:
+            # Оставляет только акции.
             if (self.type_data == 'securities'
                 and element.get('INSTRID') != 'EQIN'):
                 continue
             new_dict = {}
+            # Добавление только необходимых параметров из списка.
             for key, value in element.items():
                 if key in NEEDFUL:
                     new_dict[key] = value
             result.append(new_dict)
-        return self.test_outdata(result)
+        # Проверка и вывод результатов.
+        return self.validate_outdata(result)
 
     @classmethod
     def union_api_response(self, data_sec, data_md):
+        """ Добавляет доплнительные параметры и сводит всё в одну БД."""
         result = []
-        for item_1 in data_sec:
-            for item_2 in data_md:
-                if item_1['SECID'] == item_2['SECID']:
-                    item_1.update(item_2)
-                    item_1['DATAUPDATE'] = CURRENT_TIME
-                    if item_1['TRADINGSESSION'] is None:
-                        item_1['TRADINGSESSION'] = 'торги приостановлены'
-                    if item_1['CURRENCYID'] == 'SUR':
-                        item_1['CURRENCYID'] = 'рубль'
-            result.append(item_1)
-        return self.test_outdata(result)
+        for el_sec in data_sec:
+            for el_md in data_md:
+                # Сведение БД в одну.
+                if el_sec['SECID'] == el_md['SECID']:
+                    el_sec.update(el_md)
+            # Добавление новых параметров.
+            if el_sec['TRADINGSESSION'] is None:
+                el_sec['TRADINGSESSION'] = 'торги приостановлены'
+            elif el_sec['TRADINGSESSION'] == '1':
+                el_sec['TRADINGSESSION'] = 'торги идут'
 
-    def test_indata(indata, type_data):
-        try:  # Структура входных данных.
+            if el_sec['CURRENCYID'] == 'SUR':
+                el_sec['CURRENCYID'] = 'рубль'
+
+            format = '%H:%M:%S (%d.%m)'
+            el_sec['DATAUPDATE'] = (
+                datetime.now(timezone('Europe/Moscow'))
+            ).strftime(format)
+
+            result.append(el_sec)
+        # Проверка и вывод выходных данных.
+        return self.validate_outdata(result)
+
+    def validate_indata(indata, type_data):
+        """ Валидация входных данных (видна структура вх. данных)."""
+        try:
             if indata is None:
                 raise ValueError('indata - empty.')
             if not isinstance(indata, list):
@@ -91,8 +116,9 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
             logger.error(f'Indata error ---> {error}')
             return False
 
-    def test_outdata(outdata):
-        try:  # Структура выходных данных.
+    def validate_outdata(outdata):
+        """ Валидация выходных данных (видна структура вых. данных)."""
+        try:
             if outdata is None:
                 raise ValueError('outdata - empty.')
             if not isinstance(outdata, list):
@@ -109,8 +135,9 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
 
 
 class JSONUpData(JSONSaveAndReadISS):
-
+    """ Класс для фильтрации данных (повыш. роста)."""
     def data_filter_last(data):
+        """ Показатели на день."""
         result = []
         for el in data:
             el['STATUS_FILTER'] = 'вероятность роста'
@@ -125,6 +152,7 @@ class JSONUpData(JSONSaveAndReadISS):
 
     @classmethod
     def data_filter_daily(self, data):
+        """ Показатели в зависимости от текущих данных."""
         result = []
         params = [
             'WAPTOPREVWAPRICE', 'PRICEMINUSPREVWAPRICE', 'LCURRENTPRICE',
@@ -152,8 +180,9 @@ class JSONUpData(JSONSaveAndReadISS):
 
 
 class JSONDownData(JSONSaveAndReadISS):
-
+    """ Класс для фильтрации данных (пад. цены)."""
     def data_filter_last(data):
+        """ Показатели на день."""
         result = []
         for el in data:
             el['STATUS_FILTER'] = 'вероятность падения'
@@ -168,6 +197,7 @@ class JSONDownData(JSONSaveAndReadISS):
 
     @classmethod
     def data_filter_daily(self, data):
+        """ Показатели в зависимости от текущих данных."""
         result = []
         params = [
             'WAPTOPREVWAPRICE', 'PRICEMINUSPREVWAPRICE', 'LCURRENTPRICE',

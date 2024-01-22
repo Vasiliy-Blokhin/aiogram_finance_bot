@@ -1,114 +1,148 @@
+""" Основной исполняемый файл (запуск бота). """
 import asyncio
 import logging
 import sys
 
-from aiogram import Bot, Dispatcher, types, F
+from aiogram import Bot, Dispatcher, F, types
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from data import TOKEN, handler, PARAMS_ALL
-from message_builder import info_message, start_message, certain_shares, shares_mess, risk_message, instruction_message, counter_message, error_message
-from module import UP_JC, ALL_JC, DOWN_JC
+from data import PARAMS_ALL, TOKEN, handler
+from message_builder import (certain_shares, counter_message, error_message,
+                             info_message, instruction_message, risk_message,
+                             shares_mess, start_message)
+from module import ALL_JC, DOWN_JC, UP_JC
 
-logger = logging.getLogger(name=__name__)
+logger = logging.getLogger(name=__name__)  # Запуск логга проекта.
 logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 dp = Dispatcher()
 
-
+# Словарь для фильтрации команд (сообщений) вводимых пользователем.
 SPLIT_JS = {
-    '/up_shares': UP_JC,
-    '/down_shares': DOWN_JC,
-    '/all_shares': ALL_JC,
+    '/up': UP_JC,
+    '/down': DOWN_JC,
+    '/all': ALL_JC,
 }
 
 
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
     """
-    This handler receives messages with `/start` command
+    Стартовый набор команд (сообщений).
     """
     kb = [
         [
-            types.KeyboardButton(text='/start'),
-            types.KeyboardButton(text='/info'),
+            types.KeyboardButton(text='/start'),  # Сообщение старт.
+            types.KeyboardButton(text='/info'),  # Сообщение информации.
+            # Сообщение информации о рисках.
             types.KeyboardButton(text='/risk'),
+            # Инструкции для работы с ботом.
             types.KeyboardButton(text='/instr'),
-            types.KeyboardButton(text='/counter'),
+            types.KeyboardButton(text='/count'),  # Вывод информации о БД.
         ]
     ]
     keyboard = types.ReplyKeyboardMarkup(
         keyboard=kb,
         resize_keyboard=True,
-        input_field_placeholder='Не забудьте ознакомиться с информацией.'
+        input_field_placeholder=('Не забудьте ознакомиться с информацией '
+                                 '"/instr".')
     )
-    await message.answer(start_message(message.from_user.first_name), reply_markup=keyboard)
+    await message.answer(  # Сообщение старт.
+        start_message(message.from_user.first_name),
+        reply_markup=keyboard
+    )
 
 
 @dp.message(F.text.lower() == '/info')
 async def info_button(message: types.Message):
+    """ Вывод сообщения - общей информации."""
     await message.reply(info_message())
 
 
 @dp.message(F.text == '/risk')
 async def risk_button(message: types.Message):
+    """ Вывод сообщения информации о возможных рисках."""
     await message.reply(risk_message())
 
 
 @dp.message(F.text == '/instr')
 async def instruction_button(message: types.Message):
+    """ Вывод сообщения-инструкции по работе с ботом."""
     await message.reply(instruction_message())
 
 
-@dp.message(F.text == '/counter')
+@dp.message(F.text == '/count')
 async def counter_button(message: types.Message):
+    """ Вывод информации о БД."""
     await message.reply(counter_message())
 
 
 @dp.message()
 async def shares_button(message: types.Message):
-    split_msg = message.text.split()
+    """ Обработчик сообщений."""
+    try:
+        split_msg = message.text.split('_')
 
-    if split_msg[0] in SPLIT_JS:
-        limit = int(split_msg[1])
-        offset = None
-        if limit > 10 or len(split_msg) >= 3:
+        # Вывод сообщения ошибки, если ввод не соответсвует инструкции.
+        if len(split_msg) >= 4 or len(split_msg) < 2:
             await message.reply(text=error_message())
             return False
-        if len(split_msg) >= 3:
-            offset = int(split_msg[2])
 
-        all_data = SPLIT_JS[split_msg[0]].read_api_request()
-        for data in all_data:
-            data['STATUS_FILTER'] = 'среднее значение'
-            for data_st in UP_JC.read_api_request():
-                if data['SECID'] == data_st['SECID']:
-                    data['STATUS_FILTER'] = 'вероятность роста'
-            for data_st in DOWN_JC.read_api_request():
-                if data['SECID'] == data_st['SECID']:
-                    data['STATUS_FILTER'] = 'вероятность падения'
-            if offset:
-                offset -= 1
-                continue
-            current_message = ''
-            for key, value in data.items():
-                if key in PARAMS_ALL.keys():
-                    current_message += (
-                        shares_mess(key, value)
-                    )
-            current_message += '\n'
-            await message.reply(current_message)
-            limit -= 1
-            if limit == 0:
-                break
-    elif split_msg[0] == '/shares':
-        text = split_msg[1].upper()
-        await message.reply(text=certain_shares(text))
+        if split_msg[0] in SPLIT_JS:
+            limit = int(split_msg[1])
+            offset = None
+        # Вывод сообщения ошибки, если ввод не соответсвует инструкции.
+            if limit > 10:
+                await message.reply(text=error_message())
+                return False
+            if len(split_msg) >= 3:
+                offset = int(split_msg[2])
+
+            # Выбор БД, в зависимости от запроса.
+            all_data = SPLIT_JS[split_msg[0]].read_api_request()
+
+            for data in all_data:
+                # Выполнение функции пропуска определенного числа элементов,
+                # если пользователь задал этот параметр.
+                if offset:
+                    offset -= 1
+                    continue
+
+                # Формирование вывод-сообщения (шаблона) с показателями акции.
+                current_message = ''
+                for key, value in data.items():
+                    if key in PARAMS_ALL.keys():
+                        current_message += (
+                            shares_mess(key, value)
+                        )
+                current_message += '\n'
+                # Отправка сформированного сообщения.
+                await message.reply(current_message)
+
+                # Выполнения функции вывода определенного количества акций.
+                limit -= 1
+                if limit == 0:
+                    break
+        # Вывод отдельной акции по коду (по инструкции).
+        elif split_msg[0] == '/shares':
+            if not isinstance(split_msg[1], str):
+                await message.reply(error_message())
+            text = split_msg[1].upper()
+            await message.reply(text=certain_shares(text))
+        # Вывод сообщения ошибки, если ввод не соответсвует инструкции.
+        else:
+            await message.reply(text=error_message())
+            return False
+    except Exception as error:
+        logger.error(f"bot error ---> {error}")
+        await message.reply(error_message())
 
 
 async def main() -> None:
+    """ Выполнение основной части работы бота."""
     bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
     await dp.start_polling(bot)
 
