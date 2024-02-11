@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 from pytz import timezone
 
-from data import NEEDFUL, handler
+from data import NEEDFUL, handler, STATUS_UP, STATUS_DOWN
 
 # Запуск логгера.
 logger = logging.getLogger(name=__name__)
@@ -15,8 +15,8 @@ logger.addHandler(handler)
 
 class JSONSaveAndRead():
     """ Родительский класс для базовых действий."""
-    def __init__(self, url, file) -> None:
-        self.url: str = url
+    def __init__(self, url: str | None, file: str) -> None:
+        self.url: str | None = url
         self.file: str = file
 
     @classmethod
@@ -25,26 +25,33 @@ class JSONSaveAndRead():
         return requests.get(self.url).json()
 
     @classmethod
-    def save_api_request(self, data):
+    def save_api_request(self, data, file=None):
         """ Сохранение информации в файле."""
-        with open(self.file, 'w') as outfile:
+        if file is None:
+            file = self.file
+        with open(file, 'w') as outfile:
             json.dump(data, outfile)
 
     @classmethod
-    def read_api_request(self):
+    def read_api_request(self, file=None):
         """ Чтение информации с файла."""
-        with open(self.file) as json_file:
+        if file is None:
+            file = self.file
+        with open(file) as json_file:
             return json.load(json_file)
+
+    class Meta:
+        abstract = True
 
 
 class JSONSaveAndReadISS(JSONSaveAndRead):
     """ Класс для работы с API imoex (iss)."""
-    def __init__(self, url, file, type_data) -> None:
+    def __init__(self, url, file, type_data: str) -> None:
         super().__init__(url, file)
         self.type_data: str = type_data
 
     @classmethod
-    def api_response_filter(self):
+    def api_response_filter(self) -> list[dict] | bool:
         """ Фильтрация данных, полученных с запроса."""
         result = []
         # Получение и проверка данных.
@@ -68,7 +75,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
         return self.validate_outdata(result)
 
     @classmethod
-    def union_api_response(self, data_sec, data_md):
+    def union_api_response(self, data_sec: list[dict], data_md):
         """ Добавляет доплнительные параметры и сводит всё в одну БД."""
         result = []
         for el_sec in data_sec:
@@ -94,7 +101,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
         # Проверка и вывод выходных данных.
         return self.validate_outdata(result)
 
-    def validate_indata(indata, type_data):
+    def validate_indata(indata, type_data: str) -> list[dict] | bool:
         """ Валидация входных данных (видна структура вх. данных)."""
         try:
             if indata is None:
@@ -116,7 +123,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
             logger.error(f'Indata error ---> {error}')
             return False
 
-    def validate_outdata(outdata):
+    def validate_outdata(outdata) -> list[dict] | bool:
         """ Валидация выходных данных (видна структура вых. данных)."""
         try:
             if outdata is None:
@@ -140,7 +147,7 @@ class JSONUpData(JSONSaveAndReadISS):
         """ Показатели на день."""
         result = []
         for el in data:
-            el['STATUS_FILTER'] = 'вероятность роста'
+            el['STATUS_FILTER'] = STATUS_UP
             if el['STATUS'] != 'A':
                 continue
             if el['PREVPRICE'] is None or el['PREVWAPRICE'] is None:
@@ -185,7 +192,7 @@ class JSONDownData(JSONSaveAndReadISS):
         """ Показатели на день."""
         result = []
         for el in data:
-            el['STATUS_FILTER'] = 'вероятность падения'
+            el['STATUS_FILTER'] = STATUS_DOWN
             if el['STATUS'] != 'A':
                 continue
             if el['PREVPRICE'] is None or el['PREVWAPRICE'] is None:

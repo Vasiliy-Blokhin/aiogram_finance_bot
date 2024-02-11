@@ -35,12 +35,16 @@ NEEDFUL = [
     'PRICEMINUSPREVWAPRICE', 'DATAUPDATE', 'CURRENCYID', 'TRADINGSESSION',
     'STATUS_FILTER'
 ]
+STATISTIC_NEED = [
+    'SECID', 'STATUS_FILTER', 'TRADINGSESSION', 'LAST'
+]
 
 # Пути файлов для БД.
 FILE_MAIN = 'data_json/api_data.json'
 FILE_UP_PRICE = 'data_json/up_in_price.json'
 FILE_DOWN_PRICE = 'data_json/down_in_price.json'
-
+FILE_STATISTIC = 'data_json/statistic.json'
+FILE_DAILY_STATISTIC = 'data_json/daily_statistic.json'
 # Параметры для вывода сообщений.
 PARAMS_ALL = {
     'SECID': 'Код',
@@ -52,3 +56,9 @@ PARAMS_ALL = {
     'TRADINGSESSION': 'Текущая сессия',
     'STATUS_FILTER': 'Статус фильтрации'
 }
+
+STATUS_UP = 'вероятность роста'
+STATUS_DOWN = 'вероятность падения'
+
+SET_ITERATION = 20
+TIME_UPDATE = 120

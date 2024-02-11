@@ -4,10 +4,11 @@ from time import sleep
 
 from data import (
     IMOEX_URL, FILE_MAIN, handler, TYPE_DATA_IMOEX,
-    FILE_UP_PRICE, FILE_DOWN_PRICE
+    FILE_UP_PRICE, FILE_DOWN_PRICE, FILE_STATISTIC,
+    TIME_UPDATE, SET_ITERATION
 )
 from json_worker import JSONSaveAndReadISS, JSONDownData, JSONUpData
-
+from statistic import StatisticModule
 
 # Подключение логгера.
 logger = logging.getLogger(name=__name__)
@@ -25,6 +26,12 @@ UP_JC.file = FILE_UP_PRICE
 
 DOWN_JC = JSONDownData
 DOWN_JC.file = FILE_DOWN_PRICE
+
+STATISTIC_JS = StatisticModule
+STATISTIC_JS.json_class = [UP_JC, DOWN_JC]
+STATISTIC_JS.json_all_data = ALL_JC.read_api_request()
+STATISTIC_JS.url = None
+STATISTIC_JS.file = FILE_STATISTIC
 
 
 def get_and_save_data(api_json_class):
@@ -52,7 +59,7 @@ def filter_data(jcs, data):
 
 def add_more_information():
     """ Добавление информации отработанной алгоритмом."""
-    all_data = ALL_JC.read_api_request() 
+    all_data = ALL_JC.read_api_request()
     for data in all_data:
         # Ввод результатов фильтрации.
         data['STATUS_FILTER'] = 'среднее значение'
@@ -76,18 +83,31 @@ def add_more_information():
 
 def main():
     """ Общая логика работы."""
+    logger.info('before cycle')
+    stat_counter = 0
+    STATISTIC_JS.data_preparation()
+
     while True:
         try:
+            stat_counter += 1
+            logger.debug(f"stat_counter -> {stat_counter}")
             get_and_save_data(ALL_JC)
             filter_data(
                 [UP_JC, DOWN_JC],
                 ALL_JC.read_api_request()
             )
             add_more_information()
+
+            if SET_ITERATION == stat_counter:
+                logger.info('in statistic module')
+                STATISTIC_JS.counting_statistics()
+                STATISTIC_JS.data_preparation()
+                stat_counter = 0
+
         except Exception as error:
-            logger.error(f'Module error ---> {error}')
+            logger.error(f'Ошибка в модуле ---> {error}')
         finally:
-            sleep(60)
+            sleep(TIME_UPDATE)
 
 
 if __name__ == '__main__':
