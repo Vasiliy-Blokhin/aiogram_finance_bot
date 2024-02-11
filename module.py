@@ -91,6 +91,7 @@ def main():
         try:
             stat_counter += 1
             logger.debug(f"stat_counter -> {stat_counter}")
+
             get_and_save_data(ALL_JC)
             filter_data(
                 [UP_JC, DOWN_JC],

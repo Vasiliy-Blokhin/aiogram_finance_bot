@@ -93,7 +93,7 @@ async def shares_button(message: types.Message):
 
         if split_msg[0] in SPLIT_JS:
             limit = int(split_msg[1])
-            offset = None
+            offset = 0
         # Вывод сообщения ошибки, если ввод не соответсвует инструкции.
             if limit > 10:
                 await message.reply(text=error_message())
@@ -150,3 +150,5 @@ async def main() -> None:
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main())
+
+# add comment
