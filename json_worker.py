@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 from pytz import timezone
 
-from data import NEEDFUL, handler, STATUS_UP, STATUS_DOWN
+from settings import NEEDFUL, handler, STATUS_UP, STATUS_DOWN, STOP_TRADING, RUN_TRADING
 
 # Запуск логгера.
 logger = logging.getLogger(name=__name__)
@@ -51,7 +51,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
         self.type_data: str = type_data
 
     @classmethod
-    def api_response_filter(self) -> list[dict] | bool:
+    def api_response_filter(self):
         """ Фильтрация данных, полученных с запроса."""
         result = []
         # Получение и проверка данных.
@@ -75,9 +75,10 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
         return self.validate_outdata(result)
 
     @classmethod
-    def union_api_response(self, data_sec: list[dict], data_md):
+    def union_api_response(self, data_sec, data_md):
         """ Добавляет доплнительные параметры и сводит всё в одну БД."""
         result = []
+        logger.debug('до проверки сессии')
         for el_sec in data_sec:
             for el_md in data_md:
                 # Сведение БД в одну.
@@ -85,9 +86,9 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
                     el_sec.update(el_md)
             # Добавление новых параметров.
             if el_sec['TRADINGSESSION'] is None:
-                el_sec['TRADINGSESSION'] = 'торги приостановлены'
+                el_sec['TRADINGSESSION'] = STOP_TRADING
             elif el_sec['TRADINGSESSION'] == '1':
-                el_sec['TRADINGSESSION'] = 'торги идут'
+                el_sec['TRADINGSESSION'] = RUN_TRADING
 
             if el_sec['CURRENCYID'] == 'SUR':
                 el_sec['CURRENCYID'] = 'рубль'
@@ -99,6 +100,7 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
 
             result.append(el_sec)
         # Проверка и вывод выходных данных.
+        logger.debug('после проверки сессии')
         return self.validate_outdata(result)
 
     def validate_indata(indata, type_data: str) -> list[dict] | bool:

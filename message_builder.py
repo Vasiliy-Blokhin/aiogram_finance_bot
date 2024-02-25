@@ -1,5 +1,5 @@
-from module import ALL_JC, UP_JC, DOWN_JC
-from data import PARAMS_ALL
+from data_processor import ALL_JC, UP_JC, DOWN_JC
+from settings import PARAMS_ALL, FILE_DAILY_STATISTIC
 
 
 def start_message(name):
@@ -54,6 +54,8 @@ def instruction_message():
     """ Инструкции для работы с ботом."""
     message = (
         '📊 На данный момент вы можете использовать следующие функции: \n\n\n'
+        '👉 Информация по статистической вероятности прогноза '
+        'работы: "/statistic".\n\n'
         '👉 Вывод количества элементов (акций). Пригодится для дальнейшей '
         'работы: "/count".\n\n'
         '👉 Вывод всех результатов, например:\n'
@@ -98,6 +100,20 @@ def error_message():
     message = (
         '❗️ Читай внимательнее инструкцию "/instr".'
     )
+    return message
+
+
+def statistic_message():
+    statistic = ALL_JC.read_api_request(file=FILE_DAILY_STATISTIC)
+    last_stat = statistic[-1]
+    medium_statistic = sum(statistic) / len(statistic)
+
+    message = (
+        '📊 Статистическая вероятность:\n\n'
+        f'👉 За последнюю итерацию: {last_stat}\n'
+        f'👉 За всё время: {medium_statistic}'
+    )
+
     return message
 
 

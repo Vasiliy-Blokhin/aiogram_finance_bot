@@ -12,7 +12,6 @@ formater = logging.Formatter(
 handler.setFormatter(formater)
 
 load_dotenv()
-
 TOKEN = getenv('BOT_TOKEN')
 
 # URL для получения данных Мосбиржи.
@@ -45,6 +44,7 @@ FILE_UP_PRICE = 'data_json/up_in_price.json'
 FILE_DOWN_PRICE = 'data_json/down_in_price.json'
 FILE_STATISTIC = 'data_json/statistic.json'
 FILE_DAILY_STATISTIC = 'data_json/daily_statistic.json'
+
 # Параметры для вывода сообщений.
 PARAMS_ALL = {
     'SECID': 'Код',
@@ -56,9 +56,11 @@ PARAMS_ALL = {
     'TRADINGSESSION': 'Текущая сессия',
     'STATUS_FILTER': 'Статус фильтрации'
 }
-
 STATUS_UP = 'вероятность роста'
 STATUS_DOWN = 'вероятность падения'
+STOP_TRADING = 'торги приостановлены'
+RUN_TRADING = 'торги идут'
 
-SET_ITERATION = 20
+# Итерация работы.
+SET_ITERATION = 30
 TIME_UPDATE = 120

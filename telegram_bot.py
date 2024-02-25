@@ -8,11 +8,11 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from data import PARAMS_ALL, TOKEN, handler
+from settings import PARAMS_ALL, TOKEN, handler
 from message_builder import (certain_shares, counter_message, error_message,
                              info_message, instruction_message, risk_message,
-                             shares_mess, start_message)
-from module import ALL_JC, DOWN_JC, UP_JC
+                             shares_mess, start_message, statistic_message)
+from data_processor import ALL_JC, DOWN_JC, UP_JC
 
 logger = logging.getLogger(name=__name__)  # Запуск логга проекта.
 logger.setLevel(logging.DEBUG)
@@ -42,6 +42,8 @@ async def command_start_handler(message: Message) -> None:
             # Инструкции для работы с ботом.
             types.KeyboardButton(text='/instr'),
             types.KeyboardButton(text='/count'),  # Вывод информации о БД.
+            # Вывод информации о статистике.
+            types.KeyboardButton(text='/statistic'),
         ]
     ]
     keyboard = types.ReplyKeyboardMarkup(
@@ -78,6 +80,12 @@ async def instruction_button(message: types.Message):
 async def counter_button(message: types.Message):
     """ Вывод информации о БД."""
     await message.reply(counter_message())
+
+
+@dp.message(F.text.lower() == '/statistic')
+async def info_button(message: types.Message):
+    """ Вывод сообщения - общей информации."""
+    await message.reply(statistic_message())
 
 
 @dp.message()
@@ -150,5 +158,3 @@ async def main() -> None:
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main())
-
-# add comment

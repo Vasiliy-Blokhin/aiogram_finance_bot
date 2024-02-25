@@ -2,10 +2,10 @@
 import logging
 from time import sleep
 
-from data import (
+from settings import (
     IMOEX_URL, FILE_MAIN, handler, TYPE_DATA_IMOEX,
     FILE_UP_PRICE, FILE_DOWN_PRICE, FILE_STATISTIC,
-    TIME_UPDATE, SET_ITERATION
+    TIME_UPDATE, SET_ITERATION, STOP_TRADING, STATUS_UP, STATUS_DOWN
 )
 from json_worker import JSONSaveAndReadISS, JSONDownData, JSONUpData
 from statistic import StatisticModule
@@ -28,7 +28,7 @@ DOWN_JC = JSONDownData
 DOWN_JC.file = FILE_DOWN_PRICE
 
 STATISTIC_JS = StatisticModule
-STATISTIC_JS.json_class = [UP_JC, DOWN_JC]
+STATISTIC_JS.json_classes = [UP_JC, DOWN_JC]
 STATISTIC_JS.json_all_data = ALL_JC.read_api_request()
 STATISTIC_JS.url = None
 STATISTIC_JS.file = FILE_STATISTIC
@@ -67,15 +67,15 @@ def add_more_information():
         up_data = UP_JC.read_api_request()
         for data_st in up_data:
             if data['SECID'] == data_st['SECID']:
-                data['STATUS_FILTER'] = 'вероятность роста'
-                data_st['STATUS_FILTER'] = 'вероятность роста'
+                data['STATUS_FILTER'] = STATUS_UP
+                data_st['STATUS_FILTER'] = STATUS_UP
         UP_JC.save_api_request(up_data)
 
         down_data = DOWN_JC.read_api_request()
         for data_st in down_data:
             if data['SECID'] == data_st['SECID']:
-                data['STATUS_FILTER'] = 'вероятность падения'
-                data_st['STATUS_FILTER'] = 'вероятность падения'
+                data['STATUS_FILTER'] = STATUS_DOWN
+                data_st['STATUS_FILTER'] = STATUS_DOWN
         DOWN_JC.save_api_request(down_data)
 
     ALL_JC.save_api_request(all_data)
@@ -83,31 +83,43 @@ def add_more_information():
 
 def main():
     """ Общая логика работы."""
-    logger.info('before cycle')
     stat_counter = 0
-    STATISTIC_JS.data_preparation()
+    flag_preparation = True
 
     while True:
         try:
-            stat_counter += 1
-            logger.debug(f"stat_counter -> {stat_counter}")
+            logger.debug(f"Текущая итерация -> {stat_counter}")
 
             get_and_save_data(ALL_JC)
+
+            if ALL_JC.read_api_request()[0]['TRADINGSESSION'] == STOP_TRADING:
+                logger.info('Торги приостановлены, работа не ведется')
+                continue
+
             filter_data(
                 [UP_JC, DOWN_JC],
                 ALL_JC.read_api_request()
             )
             add_more_information()
+            logger.info('Данные успешно получены и отсортированы')
 
-            if SET_ITERATION == stat_counter:
-                logger.info('in statistic module')
-                STATISTIC_JS.counting_statistics()
+            if flag_preparation:
+                logger.info('Обработка данных для статистики')
                 STATISTIC_JS.data_preparation()
+                flag_preparation = False
+
+            if SET_ITERATION <= stat_counter:
+                logger.info('Подсчет и вывод статистики')
+                STATISTIC_JS.counting_statistics()
+                flag_preparation = True
                 stat_counter = 0
+
+            stat_counter += 1
 
         except Exception as error:
             logger.error(f'Ошибка в модуле ---> {error}')
         finally:
+            logger.info('Ожидание')
             sleep(TIME_UPDATE)
 
 
