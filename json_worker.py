@@ -5,7 +5,11 @@ import logging
 from datetime import datetime
 from pytz import timezone
 
-from settings import NEEDFUL, handler, STATUS_UP, STATUS_DOWN, STOP_TRADING, RUN_TRADING
+from settings import (
+    NEEDFUL, handler, STATUS_UP, STATUS_DOWN,
+    STOP_TRADING, RUN_TRADING, FILE_MAIN, STATUS_MEDIUM,
+    FILE_UP_PRICE, FILE_DOWN_PRICE)
+from algorithm_module import interp_4_dote, interp_6_dote
 
 # Запуск логгера.
 logger = logging.getLogger(name=__name__)
@@ -142,92 +146,84 @@ class JSONSaveAndReadISS(JSONSaveAndRead):
             logger.error(f'Outdata error ---> {error}')
             return False
 
+    @classmethod
+    def score_counter_and_filter(self):
+        data = self.read_api_request(file=FILE_MAIN)
+        max_score = 21  # Максимальный балл (вручную)
+
+        data_up = []
+        data_down = []
+
+        for share in data:
+            try:
+                current_score = 0
+
+                current_score += interp_4_dote(
+                    dote_prcnt=share['WAPTOPREVWAPRICEPRCNT'],
+                    point_limits=[-4, 4],
+                    prcnt_limits=[-4, 4],
+                    prcnt_start_limit=0.2
+                )
+
+                if share['LCURRENTPRICE'] > share['LAST']:
+                    current_score += 1
+                elif share['LCURRENTPRICE'] < share['LAST']:
+                    current_score -= 1
+
+                current_score += interp_6_dote(
+                    dote_prcnt=share['PRICEMINUSPREVWAPRICE']/share['WAPRICE'],
+                    point_limits=[-6, 6],
+                    prcnt_limits=[-4, -1.2, 1.2, 4],
+                    prcnt_start_limit=0.2
+                )
+
+                capitalization_diff = (
+                    share['TRENDISSUECAPITALIZATION']
+                    / share['ISSUECAPITALIZATION']
+                )
+                current_score += interp_4_dote(
+                    dote_prcnt=capitalization_diff,
+                    point_limits=[-4, 4],
+                    prcnt_limits=[-6, 6],
+                    prcnt_start_limit=0.3
+                )
+
+                current_score += interp_4_dote(
+                    dote_prcnt=share['LASTCNGTOLASTWAPRICE']/share['WAPRICE'],
+                    point_limits=[-4, 4],
+                    prcnt_limits=[-3, 3],
+                    prcnt_start_limit=0.1
+                )
+
+                current_score += -interp_4_dote(
+                    dote_prcnt=share['LASTCHANGEPRCNT'],
+                    point_limits=[-2, 2],
+                    prcnt_limits=[-1, 1],
+                    prcnt_start_limit=0.05
+                )
+
+                share['FILTER_SCORE'] = 100 * current_score / max_score
+
+                if share['FILTER_SCORE'] >= 70:
+                    share['STATUS_FILTER'] = STATUS_UP
+                    data_up.append(share)
+                elif share['FILTER_SCORE'] <= -70:
+                    share['STATUS_FILTER'] = STATUS_DOWN
+                    data_down.append(share)
+                else:
+                    share['STATUS_FILTER'] = STATUS_MEDIUM
+
+            except Exception:
+                continue
+
+        self.save_api_request(file=FILE_MAIN, data=data)
+        self.save_api_request(file=FILE_UP_PRICE, data=data_up)
+        self.save_api_request(file=FILE_DOWN_PRICE, data=data_down)
+
 
 class JSONUpData(JSONSaveAndReadISS):
-    """ Класс для фильтрации данных (повыш. роста)."""
-    def data_filter_last(data):
-        """ Показатели на день."""
-        result = []
-        for el in data:
-            el['STATUS_FILTER'] = STATUS_UP
-            if el['STATUS'] != 'A':
-                continue
-            if el['PREVPRICE'] is None or el['PREVWAPRICE'] is None:
-                continue
-            if el['PREVPRICE'] < el['PREVWAPRICE']:
-                continue
-            result.append(el)
-        return result
-
-    @classmethod
-    def data_filter_daily(self, data):
-        """ Показатели в зависимости от текущих данных."""
-        result = []
-        params = [
-            'WAPTOPREVWAPRICE', 'PRICEMINUSPREVWAPRICE', 'LCURRENTPRICE',
-            'PREVWAPRICE', 'LAST'
-        ]
-        for el in self.data_filter_last(data):
-            param_log = True
-            for param in params:
-                if el[param] is None:
-                    param_log = False
-            if not param_log:
-                continue
-            if el['WAPTOPREVWAPRICE'] < 0:
-                continue
-            if el['PRICEMINUSPREVWAPRICE'] < 0:
-                continue
-            if el['LCURRENTPRICE'] < el['PREVWAPRICE']:
-                continue
-            if el['LCURRENTPRICE'] < el['LAST']:
-                continue
-            if el['LAST'] < el['PREVWAPRICE']:
-                continue
-            result.append(el)
-        return result
+    pass
 
 
 class JSONDownData(JSONSaveAndReadISS):
-    """ Класс для фильтрации данных (пад. цены)."""
-    def data_filter_last(data):
-        """ Показатели на день."""
-        result = []
-        for el in data:
-            el['STATUS_FILTER'] = STATUS_DOWN
-            if el['STATUS'] != 'A':
-                continue
-            if el['PREVPRICE'] is None or el['PREVWAPRICE'] is None:
-                continue
-            if el['PREVPRICE'] > el['PREVWAPRICE']:
-                continue
-            result.append(el)
-        return result
-
-    @classmethod
-    def data_filter_daily(self, data):
-        """ Показатели в зависимости от текущих данных."""
-        result = []
-        params = [
-            'WAPTOPREVWAPRICE', 'PRICEMINUSPREVWAPRICE', 'LCURRENTPRICE',
-            'PREVWAPRICE', 'LAST'
-        ]
-        for el in self.data_filter_last(data):
-            param_log = True
-            for param in params:
-                if el[param] is None:
-                    param_log = False
-            if not param_log:
-                continue
-            if el['WAPTOPREVWAPRICE'] > 0:
-                continue
-            if el['PRICEMINUSPREVWAPRICE'] > 0:
-                continue
-            if el['LCURRENTPRICE'] > el['PREVWAPRICE']:
-                continue
-            if el['LCURRENTPRICE'] > el['LAST']:
-                continue
-            if el['LAST'] > el['PREVWAPRICE']:
-                continue
-            result.append(el)
-        return result
+    pass

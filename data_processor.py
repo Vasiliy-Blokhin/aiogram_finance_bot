@@ -5,7 +5,8 @@ from time import sleep
 from settings import (
     IMOEX_URL, FILE_MAIN, handler, TYPE_DATA_IMOEX,
     FILE_UP_PRICE, FILE_DOWN_PRICE, FILE_STATISTIC,
-    TIME_UPDATE, SET_ITERATION, STOP_TRADING, STATUS_UP, STATUS_DOWN
+    TIME_UPDATE, SET_ITERATION, STOP_TRADING, STATUS_UP, STATUS_DOWN,
+    STATUS_MEDIUM
 )
 from json_worker import JSONSaveAndReadISS, JSONDownData, JSONUpData
 from statistic import StatisticModule
@@ -49,38 +50,6 @@ def get_and_save_data(api_json_class):
     )
 
 
-def filter_data(jcs, data):
-    """ Фильтрация и сохранение по БД (+ и - цены)."""
-    for jc in jcs:
-        jc.save_api_request(
-            jc.data_filter_daily(data=data)
-        )
-
-
-def add_more_information():
-    """ Добавление информации отработанной алгоритмом."""
-    all_data = ALL_JC.read_api_request()
-    for data in all_data:
-        # Ввод результатов фильтрации.
-        data['STATUS_FILTER'] = 'среднее значение'
-
-        up_data = UP_JC.read_api_request()
-        for data_st in up_data:
-            if data['SECID'] == data_st['SECID']:
-                data['STATUS_FILTER'] = STATUS_UP
-                data_st['STATUS_FILTER'] = STATUS_UP
-        UP_JC.save_api_request(up_data)
-
-        down_data = DOWN_JC.read_api_request()
-        for data_st in down_data:
-            if data['SECID'] == data_st['SECID']:
-                data['STATUS_FILTER'] = STATUS_DOWN
-                data_st['STATUS_FILTER'] = STATUS_DOWN
-        DOWN_JC.save_api_request(down_data)
-
-    ALL_JC.save_api_request(all_data)
-
-
 def main():
     """ Общая логика работы."""
     stat_counter = 0
@@ -92,15 +61,11 @@ def main():
 
             get_and_save_data(ALL_JC)
 
-            if ALL_JC.read_api_request()[0]['TRADINGSESSION'] == STOP_TRADING:
-                logger.info('Торги приостановлены, работа не ведется')
-                continue
+            #if ALL_JC.read_api_request()[0]['TRADINGSESSION'] == STOP_TRADING:
+            #    logger.info('Торги приостановлены, работа не ведется')
+            #    continue
 
-            filter_data(
-                [UP_JC, DOWN_JC],
-                ALL_JC.read_api_request()
-            )
-            add_more_information()
+            ALL_JC.score_counter_and_filter()
             logger.info('Данные успешно получены и отсортированы')
 
             if flag_preparation:
